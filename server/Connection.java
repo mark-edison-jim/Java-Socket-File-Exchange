@@ -1,13 +1,20 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Connection extends Thread {
 
     private Socket s;
+    HashMap<Socket, String> handles = new HashMap<>();
+    ArrayList<Socket> chatRoom = new ArrayList<>();
+    Socket directChat;
 
-    public Connection(Socket s) {
+    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom, Socket directChat) {
         this.s = s;
+        this.handles = handles;
+        this.chatRoom = chatRoom;
+        this.directChat = directChat;
     }
 
     @Override
@@ -16,7 +23,7 @@ public class Connection extends Thread {
             String msg;
             DataInputStream reader = new DataInputStream(s.getInputStream());
             DataOutputStream writer = new DataOutputStream(s.getOutputStream());
-            ArrayList<String> handles = new ArrayList<String>();
+
             // This checks whether the string that was sent from
             // the client side is the terminal "END" else we
             // send the string back to the client
@@ -24,10 +31,10 @@ public class Connection extends Thread {
                 String clientCommands[] = msg.split(" ", 2);
                 switch (clientCommands[0]) {
                     case "/register":
-                        if (handles.contains(clientCommands[1])) {
+                        if (handles.containsValue(clientCommands[1])) {
                             writer.writeUTF("False");
                         } else {
-                            handles.add(clientCommands[1]);
+                            handles.put(s, clientCommands[1]);
                             writer.writeUTF("True");
                         }
                         break;
@@ -70,12 +77,59 @@ public class Connection extends Thread {
                         }
 
                         break;
+                    case "/joinCR":
+                        chatRoom.add(s);
+                        for (Socket socket : chatRoom) {
+                            if (!socket.equals(s)) {
+                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                                sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
+                            }
+                        }
+                        break;
+                    case "/cr":
+                        for (Socket socket : chatRoom) {
+                            if (!socket.equals(s)) {
+                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                                sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
+                            }
+                        }
+                        System.out.println();
+                        break;
+                    case "/dcCR":
+                    case "/joinDirect":
+                        chatRoom.add(s);
+                        for (Socket socket : chatRoom) {
+                            if (!socket.equals(s)) {
+                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                                sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
+                            }
+                        }
+                        break;
+                    case "/direct":
+                        for (Socket socket : chatRoom) {
+                            if (!socket.equals(s)) {
+                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                                sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
+                            }
+                        }
+                        System.out.println();
+                        break;
+                    case "/dcDirect":
+                        for (Socket socket : chatRoom) {
+                            if (!socket.equals(s)) {
+                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                                sender.writeUTF("--" + handles.get(s) + " has left the chat room--");
+                            }
+                        }
+                        chatRoom.remove(s);
+                        writer.writeUTF("/dc");
+                        break;
                     default:
                         System.out.println("Error: Command not found.");
                         break;
                 }
             }
-
+            handles.remove(s);
             s.close();
         } catch (Exception e) {
             e.printStackTrace();

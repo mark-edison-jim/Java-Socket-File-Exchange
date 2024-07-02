@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*; // For Scanner
+import java.util.*;
 
 public class Client {
 
@@ -93,9 +93,9 @@ public class Client {
                     System.out.println("Error: Registration failed. User already registered as " + handle + ".");
                 } else if (handle.equals("")) {
                     if (command[0].equals("/store")
-                    || command[0].equals("/get")
-                    || command[0].equals("/dir")
-                    || command[0].equals("/chat"))
+                            || command[0].equals("/get")
+                            || command[0].equals("/dir")
+                            || command[0].equals("/chat"))
                         System.out.println("Error: User must register first.");
                     else if (command[0].equals("/join"))
                         System.out.println("Error: User already joined.");
@@ -103,6 +103,19 @@ public class Client {
                         System.out.println("Error: Command not found.");
                 } else {
                     switch (command[0]) {
+                        case "/requestDM":
+                            System.out.println(
+                                    "\r" + command[1] + " wants to chat with you, /acc to accept, /dec to decline...");
+                            System.out.print("> ");
+                            String resp = sc.nextLine();
+                            while(!resp.equals("/acc") && resp.equals("/dec")){
+                                resp = sc.nextLine();
+                            }
+                                writer.writeUTF(resp);
+                            break;
+                        case "/acc":
+                            
+                            break;
                         case "/store":
                             storeFile(command, endpoint, writer, handle);
                             break;
@@ -155,7 +168,31 @@ public class Client {
                     joinChatRoom(sc, writer, reader, handle);
                     break;
                 case "/chat":
+                    if (command.length != 2) {
+                        System.out.println("Error: Command parameters do not match or is not allowed.");
+                    } else {
+                        try {
+                            writer.writeUTF("/getUsers");
+                            String users[] = reader.readUTF().split(",");
+                            boolean found = false;
+                            int i = 0;
+                            while (!found && i < users.length) {
+                                if (users[i].equals(command[1])) {
+                                    found = true;
+                                }
+                                i++;
+                            }
+                            if (!found) {
+                                System.out.println("Error: User not found.");
+                            } else {
+                                writer.writeUTF("/reqDirect " + command[1]);
+                                directChat(sc, handle, writer, reader, command[1]);
+                            }
 
+                        } catch (Exception e) {
+                            System.out.println("Error: Connection to the Server has failed!");
+                        }
+                    }
                     break;
                 case "/leave":
                     System.out.println("Error: Disconnection failed. Please connect to the server first.");
@@ -179,12 +216,13 @@ public class Client {
                     break;
             }
         } while (!(msg.equals("/chatleave")));
+
     }
 
-    static void directChat(Scanner sc, String handle, DataOutputStream writer, DataInputStream reader) {
+    static void directChat(Scanner sc, String handle, DataOutputStream writer, DataInputStream reader, String target) {
         try {
             writer.writeUTF("/joinDirect");
-            new ReceivingThread(reader, handle);
+            new ChatroomThread(reader, handle);
             String msg;
             System.out.print(handle + ": ");
             while (!(msg = sc.nextLine()).equals("/dc")) {
@@ -201,7 +239,7 @@ public class Client {
     static void joinChatRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle) {
         try {
             writer.writeUTF("/joinCR");
-            new ReceivingThread(reader, handle);
+            new ChatroomThread(reader, handle);
             String msg;
             System.out.print(handle + ": ");
             while (!(msg = sc.nextLine()).equals("/dc")) {
@@ -209,7 +247,7 @@ public class Client {
                 System.out.print(handle + ": ");
             }
             writer.writeUTF("/dcCR");
-            
+
             System.out.println("Type /chathelp for help, /chatleave to leave chats.");
         } catch (Exception e) {
             e.printStackTrace();

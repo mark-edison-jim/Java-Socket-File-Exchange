@@ -5,16 +5,15 @@ import java.util.HashMap;
 
 public class Connection extends Thread {
 
-    private Socket s;
-    HashMap<Socket, String> handles = new HashMap<>();
-    ArrayList<Socket> chatRoom = new ArrayList<>();
-    Socket directChat;
+    private static Socket s;
+    private static HashMap<Socket, String> handles = new HashMap<>();
+    private ArrayList<Socket> chatRoom = new ArrayList<>();
+    private static Socket directChat;
 
-    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom, Socket directChat) {
+    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom) {
         this.s = s;
         this.handles = handles;
         this.chatRoom = chatRoom;
-        this.directChat = directChat;
     }
 
     @Override
@@ -96,6 +95,24 @@ public class Connection extends Thread {
                         System.out.println();
                         break;
                     case "/dcCR":
+                    case "/getUsers":
+                        String users = "";
+                        for (String handle : handles.values()) {
+                            users += handle + ",";
+                        }
+                        writer.writeUTF(users.substring(0, users.length() - 1));
+                        break;
+                    case "/reqDirect":
+                        String target = clientCommands[1];
+                        Socket targetSocket = null;
+                        for (Socket socket : handles.keySet()) {
+                            if (handles.get(socket).equals(target)) {
+                                targetSocket = socket;
+                                break;
+                            }
+                        }
+                        requestDM(targetSocket, target);
+                        break;
                     case "/joinDirect":
                         chatRoom.add(s);
                         for (Socket socket : chatRoom) {
@@ -124,6 +141,9 @@ public class Connection extends Thread {
                         chatRoom.remove(s);
                         writer.writeUTF("/dc");
                         break;
+                    case "/acc":
+                        
+                        break;
                     default:
                         System.out.println("Error: Command not found.");
                         break;
@@ -136,6 +156,17 @@ public class Connection extends Thread {
         } finally {
             System.out.println("Server: Client " + s.getRemoteSocketAddress() + " has disconnected");
         }
+    }
+
+    static void requestDM(Socket targetSocket, String target) {
+        try {
+            DataOutputStream targetWriter = new DataOutputStream(targetSocket.getOutputStream());
+            directChat = targetSocket;
+            targetWriter.writeUTF("/requestDM " + handles.get(s));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     static void sendFile(Socket endpoint, String fileName, File file) {

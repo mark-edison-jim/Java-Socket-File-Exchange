@@ -9,7 +9,6 @@ public class Server {
         int port = 5000; // Can be changed
         HashMap<Socket, String> handles = new HashMap<>();
         ArrayList<Socket> chatRoom = new ArrayList<>();
-        Socket directChat = new Socket();
         try {
             ServerSocket ss = new ServerSocket(port);
 
@@ -22,7 +21,7 @@ public class Server {
                 System.out.println("Server: Client at " + endpoint.getRemoteSocketAddress() + " has connected");
 
                 // Make the Thread Object
-                Connection connect = new Connection(endpoint, handles, chatRoom, directChat);
+                Connection connect = new Connection(endpoint, handles, chatRoom);
                 // Start the thread
                 connect.start();
             }

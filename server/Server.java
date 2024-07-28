@@ -1,12 +1,10 @@
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class Server {
-
     public static void main(String[] args) {
-        int port = 5000; // Can be changed
+        int port = Integer.parseInt(args[0]); // Can be changed 
         HashMap<Socket, String> handles = new HashMap<>();
         ArrayList<Socket> chatRoom = new ArrayList<>();
         try {
@@ -29,5 +27,4 @@ public class Server {
             e.printStackTrace();
         }
     }
-
 }

@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.*; // For Scanner
 
 public class Client {
 
@@ -10,7 +10,10 @@ public class Client {
 
         Scanner outerSc = new Scanner(System.in);
         String msg = "";
+
+        System.out.println("Type /? to see all commands.");
         do {
+            //Starts to read input from client
             System.out.print("> ");
             msg = outerSc.nextLine();
 
@@ -20,10 +23,12 @@ public class Client {
                     printHelpCommands();
                     break;
                 case "/join":
+                //join command need exactly 3 inputs
                     if (command.length != 3) {
                         System.out.println("Error: Command parameters do not match or is not allowed.");
                     } else {
                         try {
+                            //gets host and port from command input
                             String host = command[1];
                             int port = Integer.parseInt(command[2]);
                             clientJoinedFunc(host, port, outerSc);
@@ -67,19 +72,19 @@ public class Client {
 
             System.out.println("Client: Has connected to server " + host + ":" + port);
 
-            DataInputStream reader = new DataInputStream(endpoint.getInputStream());
-            DataOutputStream writer = new DataOutputStream(endpoint.getOutputStream());
-
+            DataInputStream reader = new DataInputStream(endpoint.getInputStream()); //receives data from Server
+            DataOutputStream writer = new DataOutputStream(endpoint.getOutputStream()); //sends data to Server
             System.out.print("> ");
-            // Let's try inputting a string in the console
+            // Starts receiving input from client after joining Server and stops upon receiving leave command
             while (!(msg = sc.nextLine()).equals("/leave")) {
                 String command[] = msg.split(" ", 2);
                 if (command[0].equals("/?")) {
                     printHelpCommands();
-                } else if (command[0].equals("/register") && handle.equals("")) {
+                } else if (command[0].equals("/register") && handle.equals("")) { //checks if client is registered before allowing other commands
                     if (command.length != 2)
                         System.out.println("Error: Command parameters do not match or is not allowed.");
                     else {
+                        //sends register request to server
                         writer.writeUTF("/register " + command[1]);
                         String result = reader.readUTF();
                         if (result.equals("False")) {
@@ -89,33 +94,20 @@ public class Client {
                             System.out.println("Server: Welcome " + command[1] + "!");
                         }
                     }
-                } else if (command[0].equals("/register")) {
+                } else if (command[0].equals("/register")) { //user already registered
                     System.out.println("Error: Registration failed. User already registered as " + handle + ".");
-                } else if (handle.equals("")) {
+                } else if (handle.equals("")) { //dismisses other commands if user is not registered
                     if (command[0].equals("/store")
-                            || command[0].equals("/get")
-                            || command[0].equals("/dir")
-                            || command[0].equals("/chat"))
+                    || command[0].equals("/get")
+                    || command[0].equals("/dir")
+                    || command[0].equals("/chat"))
                         System.out.println("Error: User must register first.");
                     else if (command[0].equals("/join"))
                         System.out.println("Error: User already joined.");
                     else
                         System.out.println("Error: Command not found.");
-                } else {
+                } else {//user is registered and can use other commands
                     switch (command[0]) {
-                        case "/requestDM":
-                            System.out.println(
-                                    "\r" + command[1] + " wants to chat with you, /acc to accept, /dec to decline...");
-                            System.out.print("> ");
-                            String resp = sc.nextLine();
-                            while(!resp.equals("/acc") && resp.equals("/dec")){
-                                resp = sc.nextLine();
-                            }
-                                writer.writeUTF(resp);
-                            break;
-                        case "/acc":
-                            
-                            break;
                         case "/store":
                             storeFile(command, endpoint, writer, handle);
                             break;
@@ -155,6 +147,7 @@ public class Client {
         System.out.println("Type /chathelp for help, /chatleave to leave chats.");
         String msg;
         do {
+            // Starts receiving input from client
             System.out.print("> ");
             msg = sc.nextLine();
 
@@ -168,31 +161,7 @@ public class Client {
                     joinChatRoom(sc, writer, reader, handle);
                     break;
                 case "/chat":
-                    if (command.length != 2) {
-                        System.out.println("Error: Command parameters do not match or is not allowed.");
-                    } else {
-                        try {
-                            writer.writeUTF("/getUsers");
-                            String users[] = reader.readUTF().split(",");
-                            boolean found = false;
-                            int i = 0;
-                            while (!found && i < users.length) {
-                                if (users[i].equals(command[1])) {
-                                    found = true;
-                                }
-                                i++;
-                            }
-                            if (!found) {
-                                System.out.println("Error: User not found.");
-                            } else {
-                                writer.writeUTF("/reqDirect " + command[1]);
-                                directChat(sc, handle, writer, reader, command[1]);
-                            }
 
-                        } catch (Exception e) {
-                            System.out.println("Error: Connection to the Server has failed!");
-                        }
-                    }
                     break;
                 case "/leave":
                     System.out.println("Error: Disconnection failed. Please connect to the server first.");
@@ -217,37 +186,38 @@ public class Client {
             }
         } while (!(msg.equals("/chatleave")));
 
+        System.out.println("Type /? to see all commands.");
     }
 
-    static void directChat(Scanner sc, String handle, DataOutputStream writer, DataInputStream reader, String target) {
-        try {
-            writer.writeUTF("/joinDirect");
-            new ChatroomThread(reader, handle);
-            String msg;
-            System.out.print(handle + ": ");
-            while (!(msg = sc.nextLine()).equals("/dc")) {
-                writer.writeUTF("/cr " + msg);
-                System.out.print(handle + ": ");
-            }
-            writer.writeUTF("/dcCR");
-            System.out.println("Type /chathelp for help, /chatleave to leave chats.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // static void directChat(Scanner sc, String handle, DataOutputStream writer, DataInputStream reader) {
+    //     try {
+    //         writer.writeUTF("/joinDirect");
+    //         new ChatroomThread(reader, handle);
+    //         String msg;
+    //         System.out.print(handle + ": ");
+    //         while (!(msg = sc.nextLine()).equals("/dc")) {
+    //             writer.writeUTF("/cr " + msg);
+    //             System.out.print(handle + ": ");
+    //         }
+    //         writer.writeUTF("/dcCR");
+    //         System.out.println("Type /chathelp for help, /chatleave to leave chats.");
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     static void joinChatRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle) {
         try {
-            writer.writeUTF("/joinCR");
-            new ChatroomThread(reader, handle);
+            writer.writeUTF("/joinCR"); //sends join chatroom request
+            new ChatroomThread(reader, handle); //starts chatroom thread for client to keep waiting for messages from server
             String msg;
             System.out.print(handle + ": ");
             while (!(msg = sc.nextLine()).equals("/dc")) {
-                writer.writeUTF("/cr " + msg);
+                writer.writeUTF("/cr " + msg); //sends message to server
                 System.out.print(handle + ": ");
             }
             writer.writeUTF("/dcCR");
-
+            
             System.out.println("Type /chathelp for help, /chatleave to leave chats.");
         } catch (Exception e) {
             e.printStackTrace();
@@ -262,17 +232,17 @@ public class Client {
             else {
                 writer.writeUTF(msg);
                 if (reader.readBoolean()) {
-                    String fileName = reader.readUTF();
+                    String fileName = reader.readUTF(); //read file name from server
 
                     if (fileName.length() > 0) {
-                        int fileContentLength = reader.readInt();
+                        int fileContentLength = reader.readInt(); //read file content length from server
                         if (fileContentLength > 0) {
                             byte[] fileContentBytes = new byte[fileContentLength];
-                            reader.readFully(fileContentBytes, 0, fileContentLength);
+                            reader.readFully(fileContentBytes, 0, fileContentLength); //read file content from server
 
-                            File file = new File("./receivedFiles/" + fileName);
+                            File file = new File("./receivedFiles/" + fileName); //create file in receivedFiles folder in client folder
                             FileOutputStream fos = new FileOutputStream(file);
-                            fos.write(fileContentBytes);
+                            fos.write(fileContentBytes); //write file content to file
                             fos.close();
                             System.out.println("File received from Server: " + fileName);
                         }
@@ -288,17 +258,19 @@ public class Client {
 
     static void storeFile(String[] command, Socket endpoint, DataOutputStream writer, String handle) {
         try {
+            //store command needs exactly 2 inputs
             if (command.length != 2)
                 System.out.println("Error: Command parameters do not match or is not allowed.");
             else {
+                //gets file path in client folder
                 String path = "./files/" + command[1];
                 File file = new File(path);
                 if (file.exists() && !file.isDirectory()) {
-                    writer.writeUTF("/store");
+                    writer.writeUTF("/store"); //sends store request to server
                     sendFile(endpoint, command[1], file);
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
                     LocalDateTime now = LocalDateTime.now();
-                    System.out.println(handle + "<" + dtf.format(now) + ">: Uploaded " + command[1]);
+                    System.out.println(handle + "<" + dtf.format(now) + ">: Uploaded " + command[1]); //log message that client has stored file to server
                 } else {
                     System.out.println("Error: File not found.");
                 }
@@ -310,17 +282,17 @@ public class Client {
 
     static void sendFile(Socket endpoint, String fileName, File file) {
         try {
-            FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-            DataOutputStream dos = new DataOutputStream(endpoint.getOutputStream());
+            FileInputStream fis = new FileInputStream(file.getAbsolutePath()); //gets file path in client folder
+            DataOutputStream dos = new DataOutputStream(endpoint.getOutputStream()); //sends file to server
 
-            byte[] fileContentBytes = new byte[(int) file.length()];
+            byte[] fileContentBytes = new byte[(int) file.length()]; //gets file size and data
 
-            fis.read(fileContentBytes);
+            fis.read(fileContentBytes); //reads file data and stores in byte array
 
-            dos.writeUTF(fileName);
+            dos.writeUTF(fileName); //sends file name
 
-            dos.writeInt(fileContentBytes.length);
-            dos.write(fileContentBytes);
+            dos.writeInt(fileContentBytes.length); //sends file size
+            dos.write(fileContentBytes); //sends file data
 
             fis.close();
         } catch (Exception e) {

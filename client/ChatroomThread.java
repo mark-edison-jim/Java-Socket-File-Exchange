@@ -2,7 +2,7 @@ import java.io.DataInputStream;
 
 public class ChatroomThread implements Runnable{
 
-    private DataInputStream reader;
+    private DataInputStream reader; //reads chatroom messages for each client
     private boolean exit;
     String handle;
     private Thread t;
@@ -21,7 +21,7 @@ public class ChatroomThread implements Runnable{
                 Thread.sleep(200);
                 String msg = reader.readUTF();
                 if(!msg.equals("/dc")){
-                    System.out.println("\r" + msg);
+                    System.out.println("\r" + msg); //removes current line and adds new lines to simulate new incoming messages
                     System.out.print(handle + ": ");
                 }else{
                     stop();

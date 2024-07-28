@@ -5,10 +5,10 @@ import java.util.HashMap;
 
 public class Connection extends Thread {
 
-    private static Socket s;
-    private static HashMap<Socket, String> handles = new HashMap<>();
-    private ArrayList<Socket> chatRoom = new ArrayList<>();
-    private static Socket directChat;
+    private Socket s;
+    HashMap<Socket, String> handles = new HashMap<>();
+    ArrayList<Socket> chatRoom = new ArrayList<>();
+    Socket directChat;
 
     public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom) {
         this.s = s;
@@ -20,8 +20,8 @@ public class Connection extends Thread {
     public void run() {
         try {
             String msg;
-            DataInputStream reader = new DataInputStream(s.getInputStream());
-            DataOutputStream writer = new DataOutputStream(s.getOutputStream());
+            DataInputStream reader = new DataInputStream(s.getInputStream()); //receiving data from client
+            DataOutputStream writer = new DataOutputStream(s.getOutputStream()); //sending data to client
 
             // This checks whether the string that was sent from
             // the client side is the terminal "END" else we
@@ -29,7 +29,7 @@ public class Connection extends Thread {
             while (!(msg = reader.readUTF()).equals("END")) {
                 String clientCommands[] = msg.split(" ", 2);
                 switch (clientCommands[0]) {
-                    case "/register":
+                    case "/register": //receives register request from client and checks if handle already exists
                         if (handles.containsValue(clientCommands[1])) {
                             writer.writeUTF("False");
                         } else {
@@ -37,17 +37,17 @@ public class Connection extends Thread {
                             writer.writeUTF("True");
                         }
                         break;
-                    case "/store":
+                    case "/store": //receives store request from client
                         String fileName = reader.readUTF();
 
-                        if (fileName.length() > 0) {
-                            int fileContentLength = reader.readInt();
+                        if (fileName.length() > 0) { //checks if filename is not empty
+                            int fileContentLength = reader.readInt(); //checks if filecontent length is not 0
                             if (fileContentLength > 0) {
                                 byte[] fileContentBytes = new byte[fileContentLength];
-                                reader.readFully(fileContentBytes, 0, fileContentLength);
+                                reader.readFully(fileContentBytes, 0, fileContentLength); //reads file content from client
 
-                                File file = new File("./files/" + fileName);
-                                FileOutputStream fos = new FileOutputStream(file);
+                                File file = new File("./files/" + fileName); //creates new file in server files directory
+                                FileOutputStream fos = new FileOutputStream(file); //writes file to server files directory
                                 fos.write(fileContentBytes);
                                 fos.close();
                             }
@@ -65,28 +65,28 @@ public class Connection extends Thread {
                         }
                         break;
 
-                    case "/get":
-                        String path = "./files/" + clientCommands[1];
+                    case "/get": //receives get request from client
+                        String path = "./files/" + clientCommands[1]; //gets file path in server
                         File file = new File(path);
                         if (file.exists() && !file.isDirectory()) {
-                            writer.writeBoolean(true);
+                            writer.writeBoolean(true); //sends true if file exists
                             sendFile(s, clientCommands[1], file);
                         } else {
                             writer.writeBoolean(false);
                         }
 
                         break;
-                    case "/joinCR":
-                        chatRoom.add(s);
-                        for (Socket socket : chatRoom) {
+                    case "/joinCR": //receives join chatroom request
+                        chatRoom.add(s); //adds client to chatroom
+                        for (Socket socket : chatRoom) { //notifies all clients in chatroom that a new client has joined
                             if (!socket.equals(s)) {
                                 DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
                                 sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
                             }
                         }
                         break;
-                    case "/cr":
-                        for (Socket socket : chatRoom) {
+                    case "/cr": //receives message from client in chatroom
+                        for (Socket socket : chatRoom) { //sends message to all clients in chatroom
                             if (!socket.equals(s)) {
                                 DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
                                 sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
@@ -95,43 +95,6 @@ public class Connection extends Thread {
                         System.out.println();
                         break;
                     case "/dcCR":
-                    case "/getUsers":
-                        String users = "";
-                        for (String handle : handles.values()) {
-                            users += handle + ",";
-                        }
-                        writer.writeUTF(users.substring(0, users.length() - 1));
-                        break;
-                    case "/reqDirect":
-                        String target = clientCommands[1];
-                        Socket targetSocket = null;
-                        for (Socket socket : handles.keySet()) {
-                            if (handles.get(socket).equals(target)) {
-                                targetSocket = socket;
-                                break;
-                            }
-                        }
-                        requestDM(targetSocket, target);
-                        break;
-                    case "/joinDirect":
-                        chatRoom.add(s);
-                        for (Socket socket : chatRoom) {
-                            if (!socket.equals(s)) {
-                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
-                                sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
-                            }
-                        }
-                        break;
-                    case "/direct":
-                        for (Socket socket : chatRoom) {
-                            if (!socket.equals(s)) {
-                                DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
-                                sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
-                            }
-                        }
-                        System.out.println();
-                        break;
-                    case "/dcDirect":
                         for (Socket socket : chatRoom) {
                             if (!socket.equals(s)) {
                                 DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
@@ -141,9 +104,34 @@ public class Connection extends Thread {
                         chatRoom.remove(s);
                         writer.writeUTF("/dc");
                         break;
-                    case "/acc":
-                        
-                        break;
+                    // case "/joinDirect":
+                    //     chatRoom.add(s);
+                    //     for (Socket socket : chatRoom) {
+                    //         if (!socket.equals(s)) {
+                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                    //             sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
+                    //         }
+                    //     }
+                    //     break;
+                    // case "/direct":
+                    //     for (Socket socket : chatRoom) {
+                    //         if (!socket.equals(s)) {
+                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                    //             sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
+                    //         }
+                    //     }
+                    //     System.out.println();
+                    //     break;
+                    // case "/dcDirect":
+                    //     for (Socket socket : chatRoom) {
+                    //         if (!socket.equals(s)) {
+                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
+                    //             sender.writeUTF("--" + handles.get(s) + " has left the chat room--");
+                    //         }
+                    //     }
+                    //     chatRoom.remove(s);
+                    //     writer.writeUTF("/dc");
+                    //     break;
                     default:
                         System.out.println("Error: Command not found.");
                         break;
@@ -158,31 +146,20 @@ public class Connection extends Thread {
         }
     }
 
-    static void requestDM(Socket targetSocket, String target) {
-        try {
-            DataOutputStream targetWriter = new DataOutputStream(targetSocket.getOutputStream());
-            directChat = targetSocket;
-            targetWriter.writeUTF("/requestDM " + handles.get(s));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
     static void sendFile(Socket endpoint, String fileName, File file) {
         try {
 
-            FileInputStream fis = new FileInputStream(file.getAbsolutePath());
-            DataOutputStream dos = new DataOutputStream(endpoint.getOutputStream());
+            FileInputStream fis = new FileInputStream(file.getAbsolutePath()); //gets file path in server folder
+            DataOutputStream dos = new DataOutputStream(endpoint.getOutputStream()); //sends file to client
 
-            byte[] fileContentBytes = new byte[(int) file.length()];
+            byte[] fileContentBytes = new byte[(int) file.length()]; //gets file size and data
 
-            fis.read(fileContentBytes);
+            fis.read(fileContentBytes);  //reads file data and stores in byte array
 
-            dos.writeUTF(fileName);
+            dos.writeUTF(fileName); //sends file name
 
-            dos.writeInt(fileContentBytes.length);
-            dos.write(fileContentBytes);
+            dos.writeInt(fileContentBytes.length); //sends file size
+            dos.write(fileContentBytes); //sends file data
 
             fis.close();
         } catch (Exception e) {

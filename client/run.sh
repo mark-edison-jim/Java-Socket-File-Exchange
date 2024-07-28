@@ -1,3 +1,3 @@
 javac Client.java
 
-java Client
+java Client.java

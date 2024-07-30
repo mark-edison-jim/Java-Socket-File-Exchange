@@ -29,7 +29,7 @@ public class Connection extends Thread {
             // the client side is the terminal "END" else we
             // send the string back to the client
             while (!(msg = reader.readUTF()).equals("END")) {
-                String clientCommands[] = msg.split(" ", 4);
+                String clientCommands[] = msg.split(" ", 2);
                 switch (clientCommands[0]) {
                     case "/register": //receives register request from client and checks if handle already exists
                         if (handles.containsValue(clientCommands[1])) {
@@ -107,9 +107,10 @@ public class Connection extends Thread {
                         writer.writeUTF("/dc");
                         break;
                     case "/dm": //handles dms
-                        String dmMessage = clientCommands[1]; // The direct message
-                        String handle = clientCommands[2];  // Sender's handle
-                        String otherUser = clientCommands[3]; // Recipient's handle
+                        String newString[] = msg.split("~", 3);
+                        String dmMessage = newString[1]; // The direct message
+                        String handle = newString[2];  // Sender's handle
+                        String otherUser = newString[3]; // Recipient's handle
 
                         System.out.println("HANDLE: " + handle + " OTHER USER: " + otherUser + " Message: " + msg);
                         System.out.println("==========================================================");
@@ -129,14 +130,11 @@ public class Connection extends Thread {
                         DataOutputStream otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
                         otherUserStream.writeUTF(handle + ": " + dmMessage);
                         
-
-                        // Optionally, you may want to notify the sender that their message was sent
-                        DataOutputStream handleStream = new DataOutputStream(handleSocket.getOutputStream());
-                        handleStream.writeUTF("You sent a message to " + otherUser + ": " + dmMessage);
                         
 
                         break;
                     case "/dcDM": // leave dm room
+                        writer.writeUTF("/dc");
                         break;
                     default:
                         System.out.println("Error: Command not found.");

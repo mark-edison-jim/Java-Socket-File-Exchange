@@ -183,7 +183,7 @@ public class Client {
             String msg;
             System.out.print(handle + ": ");
             while (!(msg = sc.nextLine()).equals("/dc")) {
-                writer.writeUTF("/dm " + msg + " " + handle + " " + otherUser); //sends message to server
+                writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
                 System.out.print(handle + ": ");
             }
             writer.writeUTF("/dcDM");

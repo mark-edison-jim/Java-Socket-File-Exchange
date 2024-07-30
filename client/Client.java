@@ -178,15 +178,16 @@ public class Client {
 
     static void joinDMRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle, String otherUser) {
         try {
+            writer.writeUTF("/joinDM " + handle + "~" + otherUser);
             System.out.println("Chatting with : " + otherUser);
             new ChatroomThread(reader, handle); //starts chatroom thread for client to keep waiting for messages from server
             String msg;
             System.out.print(handle + ": ");
             while (!(msg = sc.nextLine()).equals("/dc")) {
-                writer.writeUTF("/dm " + msg + " " + handle + " " + otherUser); //sends message to server
+                writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
                 System.out.print(handle + ": ");
             }
-            writer.writeUTF("/dcDM");
+            writer.writeUTF("/dcDM " + handle + "~" + otherUser);
     
             System.out.println("Type /chathelp for help, /chatleave to leave chats.");
         } catch (Exception e) {

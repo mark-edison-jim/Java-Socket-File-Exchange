@@ -1,15 +1,20 @@
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 
-public class ChatroomThread implements Runnable{
+public class DMThread implements Runnable{
 
     private DataInputStream reader; //reads chatroom messages for each client
+    private DataOutputStream writer;
     private boolean exit;
     String handle;
+    String otherUser;
     private Thread t;
-    public ChatroomThread(DataInputStream reader, String handle){
+    public DMThread(DataInputStream reader, DataOutputStream writer, String handle, String otherUser){
         this.reader = reader;
+        this.writer = writer;
         this.handle = handle;
+        this.otherUser = otherUser;
         exit = false;
         t = new Thread(this);
         t.start();
@@ -21,11 +26,12 @@ public class ChatroomThread implements Runnable{
     public void run() {
         try {
             while (!exit) {
-                Thread.sleep(200);
+               Thread.sleep(1500);
                 String msg = reader.readUTF();
+                writer.writeUTF("/log " + handle +"~"+ otherUser +"~"+ msg);
                 if(!msg.equals("/dc")){
                     System.out.println("\r" + msg); //removes current line and adds new lines to simulate new incoming messages
-                    System.out.print(handle + ": ");
+                    System.out.print("DM Thread - " + handle + ": ");
                     
                 }else{
                     stop();

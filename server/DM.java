@@ -27,7 +27,12 @@ public class DM {
 
     public void addMessage(String user, String message) {
         StringBuilder sb = new StringBuilder();
-        sb.append("From DM class ").append(user).append(": ").append(message).append(" \n");
+        sb.append(user).append(": ").append(message).append(" \n");
+        messageLog.add(sb.toString());
+    }
+    public void addMessage(String message) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(message).append(" \n");
         messageLog.add(sb.toString());
     }
 

@@ -161,9 +161,12 @@ public class Client {
                     joinChatRoom(sc, writer, reader, handle);
                     break;
                 case "/whisper":
-                System.out.println("Type /dc to leave the chatroom.");
-                String otherUser = command[1];
-                    joinDMRoom(sc, writer, reader, handle, otherUser);
+                    if(command.length == 2)
+                    {
+                        System.out.println("Type /dc to leave the chatroom.");
+                        String otherUser = command[1];
+                            joinDMRoom(sc, writer, reader, handle, otherUser);
+                    }
                     break;
                 default:
                     if (!(msg.equals("/chatleave"))) {
@@ -180,12 +183,11 @@ public class Client {
         try {
            writer.writeUTF("/joinDM " + handle + "~" + otherUser);
             System.out.println("Chatting with : " + otherUser);
-            ChatroomThread thread = new ChatroomThread(reader, handle); //starts chatroom thread for client to keep waiting for messages from server
+            new DMThread(reader, writer, handle, otherUser); //starts chatroom thread for client to keep waiting for messages from server
             String msg;
             while (!(msg = sc.nextLine()).equals("/dc")) {
-                System.out.print("From Client JoinDMRoom - " + handle + ": ");
-                writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser + "~" + thread.getMessage()); //sends message to server
-               
+                writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
+                System.out.print(handle + ": ");
             }
             writer.writeUTF("/dcDM " + handle + "~" + otherUser);
     

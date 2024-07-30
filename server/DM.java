@@ -1,11 +1,11 @@
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 public class DM {
     private String userA;
     private String userB;
     private int roomID;
-    private LinkedHashMap<String, String> messageLog = new LinkedHashMap<>();
+    private ArrayList<String> messageLog = new ArrayList<>();
+
 
     public DM(String userA, String userB, int roomID) {
         this.userA = userA;
@@ -26,17 +26,22 @@ public class DM {
     }
 
     public void addMessage(String user, String message) {
-        messageLog.put(user, message);
+        StringBuilder sb = new StringBuilder();
+        sb.append("From DM class ").append(user).append(": ").append(message).append(" \n");
+        messageLog.add(sb.toString());
     }
 
     public String getMessages() {
         StringBuilder sb = new StringBuilder();
-        messageLog.forEach((user, message) -> sb.append(user).append(": ").append(message).append("\n"));
+        for (String message : messageLog){
+            sb.append(message);
+        }
+
         return sb.toString();
     }
     
 
-    public LinkedHashMap<String, String> getMessageLog() {
+    public ArrayList<String> getMessageLog() {
         return messageLog;
     }
 }

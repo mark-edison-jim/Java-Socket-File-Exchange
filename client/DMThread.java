@@ -26,12 +26,12 @@ public class DMThread implements Runnable{
     public void run() {
         try {
             while (!exit) {
-               Thread.sleep(1500);
+               Thread.sleep(200);
                 String msg = reader.readUTF();
                 writer.writeUTF("/log " + handle +"~"+ otherUser +"~"+ msg);
                 if(!msg.equals("/dc")){
                     System.out.println("\r" + msg); //removes current line and adds new lines to simulate new incoming messages
-                    System.out.print("DM Thread - " + handle + ": ");
+                    System.out.print(handle + ": ");
                     
                 }else{
                     stop();

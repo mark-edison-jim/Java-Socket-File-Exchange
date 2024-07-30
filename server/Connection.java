@@ -121,16 +121,12 @@ public class Connection extends Thread {
                         newString = clientCommands[1].split("~", 3);
                         handle = newString[0];  // Sender's handle
                         otherUser = newString[1]; // Recipient's handle
-                        otherUserSocket = getKeyByValue(handles, otherUser);
                         handleSocket = getKeyByValue(handles, handle);
                         DM curRoom = dmRooms.getOrCreateRoom(handle, otherUser);
-                        
-                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                        otherUserStream.writeUTF("--" + handle + " has entered the chat--");
-       
+
                         handleStream = new DataOutputStream(handleSocket.getOutputStream());
                         System.out.println(handle + " : " + curRoom.getMessages());
-                        handleStream.writeUTF("TESTING: " + curRoom.getMessages());
+                        handleStream.writeUTF(curRoom.getMessages());
                         break;
                     case "/dm": //handles dms
                         newString = clientCommands[1].split("~", 3);
@@ -141,11 +137,9 @@ public class Connection extends Thread {
                         otherUserSocket = getKeyByValue(handles, otherUser);
 
                         DM currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
-                        if(!(dmMessage.length() == 0 || dmMessage.contains(" has entered the chat--") || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc")))
-                        {
+                        if (!(dmMessage.length() == 0 || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc"))) {
                             currentRoom.addMessage(handle, dmMessage.trim());
-                            System.out.println("================== /DM FILTERED: " + dmMessage + " ========================");
-                        }   
+                        }
 
                         if (handleSocket == null || otherUserSocket == null) {
                             System.out.println("One or both users not found.");
@@ -154,7 +148,6 @@ public class Connection extends Thread {
 
                         // Send the direct message to the other user
                         otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                        //otherUserStream.writeUTF(handle + ": " + dmMessage);
                         otherUserStream.writeUTF(handle + ": " + dmMessage);
 
                         break;
@@ -164,12 +157,10 @@ public class Connection extends Thread {
                         otherUser = newString[1]; // Recipient's handle
                         otherMessage = newString[2];
                         DM currRoom = dmRooms.getOrCreateRoom(handle, otherUser);
-                        if(!(otherMessage.length() == 0 || otherMessage.contains(" has entered the chat--") || otherMessage.contains(" has left the chat--") || otherMessage.contains("/dc")))
-                        {
-                            currRoom.addMessage(otherMessage.trim());
-                            System.out.println("================== /LOG FILTERED: " + otherMessage + " ========================");
-                        }    
-                       
+                        if (!(otherMessage.length() == 0 || otherMessage.contains(" has left the chat--") || otherMessage.contains("/dc"))) {
+                            currRoom.addMessage(otherMessage.trim());                     
+                        }
+
                         break;
                     case "/dcDM": // leave dm room
                         newString = clientCommands[1].split("~", 2);

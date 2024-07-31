@@ -151,12 +151,12 @@ public class Connection extends Thread {
                         System.out.println(" JUST JOINED | OTHERUSER: " + otherUser + " OTHERUSER STATUS: " + currentRoom.checkIfUserJoined(otherUser));
                         if (currentRoom.checkIfUserJoined(otherUser)) {
                             otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                            otherUserStream.writeUTF("/skip /joined " + "--" + handle + " has joined the chat--");
+                            otherUserStream.writeUTF("--" + handle + " has joined the chat--");
                         }
 
                         handleStream = new DataOutputStream(handleSocket.getOutputStream());
                         System.out.println(handle + " : " + currentRoom.getMessages());
-                        handleStream.writeUTF("/skip /curr " + currentRoom.getMessages());
+                        handleStream.writeUTF("/skip " + currentRoom.getMessages());
                         break;
                     case "/dm": //handles dms
                         newString = clientCommands[1].split("~", 3);
@@ -191,9 +191,6 @@ public class Connection extends Thread {
                         if (currentRoom.checkIfUserJoined(otherUser)) {
                             otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
                             otherUserStream.writeUTF(handle + ": " + dmMessage);
-                        } else {
-                            handleStream = new DataOutputStream(handleSocket.getOutputStream());
-                            handleStream.writeUTF("/skip System: Unable to send message, " + otherUser +" has not joined yet.");
                         }
                         break;
                     case "/dcDM": // leave dm room
@@ -216,7 +213,7 @@ public class Connection extends Thread {
 
                         if (currentRoom.checkIfUserJoined(otherUser)) {
                             otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                            otherUserStream.writeUTF("/skip /left " + "--" + handle + " has left the chat--");
+                            otherUserStream.writeUTF("--" + handle + " has left the chat--");
                         }
                         writer.writeUTF("/dc");
                         break;

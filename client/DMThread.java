@@ -40,27 +40,10 @@ public class DMThread implements Runnable{
                     }
                 }
                 else{
-                    String trimmedMsg[] = message[1].split(" ", 2);
                   //System.out.println(" TrimmedMsg [0] : " + trimmedMsg[0]);
-                    switch(trimmedMsg[0])
-                    {
-                        case "/joined":
-                        System.out.println("\r" + trimmedMsg[1]); //removes current line and adds new lines to simulate new incoming messages
-                        System.out.print(handle + ": ");
-                        break;
-                        case "/curr":
                     //System.out.println(" CASE 2 : " + trimmedMsg[1]);
-                        System.out.println(trimmedMsg[1]); //removes current line and adds new lines to simulate new incoming messages
+                        System.out.println(message[1]); //removes current line and adds new lines to simulate new incoming messages
                         System.out.print(handle + ": ");
-                        break;
-                        case "/left":
-                        System.out.println("\r" + trimmedMsg[1]); //removes current line and adds new lines to simulate new incoming messages
-                        System.out.print(handle + ": ");
-                        break;
-                        default:
-                        break;
-                    }
-                   
                 }
 
             }

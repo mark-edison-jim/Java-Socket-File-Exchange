@@ -114,6 +114,7 @@ public class Client {
                             outputArea.append("Client: has terminated connection\n");
                             
                             endpoint.close();
+                            hasRegistered=false;
                         } catch (IOException ex) {
                         }
                     }
@@ -126,12 +127,12 @@ public class Client {
                     {
                         if(hasJoined)
                         {
-                            DataInputStream reader = null;
                             try {
-                                reader = new DataInputStream(endpoint.getInputStream()); //receives data from Server
-                                writer = new DataOutputStream(endpoint.getOutputStream()); //sends data to Server
+                                reader = new DataInputStream(endpoint.getInputStream());
+                                writer = new DataOutputStream(endpoint.getOutputStream());
                                 writer.writeUTF(msg);
-                                writer.writeUTF("/register " + command[1]);
+                            
+                                // Attempt to read response from server
                                 String result = reader.readUTF();
                                 if (result.equals("False")) {
                                     outputArea.append("Error: Registration failed. Handle or alias already exists.\n");
@@ -140,13 +141,13 @@ public class Client {
                                     outputArea.append("Server: Welcome " + command[1] + "!\n");
                                     hasRegistered = true;
                                 }
+                            } catch (EOFException eofEx) {
+                                outputArea.append("Error: Unexpected end of data stream. Check server response.\n");
+                                eofEx.printStackTrace();
                             } catch (IOException ex) {
-                            } finally {
-                                try {
-                                    reader.close();
-                                } catch (IOException ex) {
-                                }
-                            }
+                                outputArea.append("Error: IO Exception occurred.\n");
+                                ex.printStackTrace();
+                            }                            
                         }
                         else
                             outputArea.append("Error: Register failed. Please connect to the server first.\n");

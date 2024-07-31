@@ -116,16 +116,29 @@ public class Connection extends Thread {
                         chatRoom.remove(s);
                         writer.writeUTF("/dc");
                         break;
-                    case "/joinDM": // leave dm room
+                    case "/check": //receives message from client in chatroom
+                        newString = clientCommands[1].split("~", 2);
+                        handle = newString[0];  // Sender's handle
+                        otherUser = newString[1]; // Recipient's handle
+                        if (handle.equals(otherUser)) {
+                            writer.writeUTF("False1");
+                        } else {
+                            writer.writeUTF(handles.containsValue(otherUser) ? "True" : "False2");
+                        }
+                    break;
+                    case "/joinDM":
                         newString = clientCommands[1].split("~", 3);
                         handle = newString[0];  // Sender's handle
                         otherUser = newString[1]; // Recipient's handle
                         handleSocket = getKeyByValue(handles, handle);
+                        otherUserSocket = getKeyByValue(handles, otherUser);
                         DM curRoom = dmRooms.getOrCreateRoom(handle, otherUser);
 
+                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                        otherUserStream.writeUTF("/skip /joined " + "--" + handle + " has joined the chat--");
                         handleStream = new DataOutputStream(handleSocket.getOutputStream());
                         System.out.println(handle + " : " + curRoom.getMessages());
-                        handleStream.writeUTF(curRoom.getMessages());
+                        handleStream.writeUTF("/skip /curr " + curRoom.getMessages());
                         break;
                     case "/dm": //handles dms
                         newString = clientCommands[1].split("~", 3);
@@ -167,7 +180,7 @@ public class Connection extends Thread {
                         otherUser = newString[1]; // Recipient's handle
                         otherUserSocket = getKeyByValue(handles, otherUser);
                         otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                        otherUserStream.writeUTF("--" + handle + " has left the chat--");
+                        otherUserStream.writeUTF("/skip /left " + "--" + handle + " has left the chat--");
 
                         writer.writeUTF("/dc");
                         break;

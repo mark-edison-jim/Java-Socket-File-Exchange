@@ -163,9 +163,28 @@ public class Client {
                 case "/whisper":
                     if(command.length == 2)
                     {
-                        System.out.println("Type /dc to leave the chatroom.");
-                        String otherUser = command[1];
+                        String otherUser = command[1]; 
+                    try {
+                        writer.writeUTF("/check " + handle + "~" + otherUser);
+                        writer.flush(); 
+                        
+                  
+                        String response = reader.readUTF();
+                        if ("True".equals(response)) {
+                            System.out.println("Type /dc to leave the chatroom.");
                             joinDMRoom(sc, writer, reader, handle, otherUser);
+                        } else if ("False1".equals(response)){
+                            System.out.println("Error: Cannot Whisper Yourself!");
+                        } else {
+                            System.out.println("Error: User not found!");
+                        }
+                        } catch (IOException e) {
+                            System.out.println("Error: Communication issue.");
+                            e.printStackTrace(); 
+                        }
+                    }
+                    else{
+                        System.out.println("Error: Invalid Command");
                     }
                     break;
                 default:
@@ -181,7 +200,7 @@ public class Client {
 
     static void joinDMRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle, String otherUser) {
         try {
-           writer.writeUTF("/joinDM " + handle + "~" + otherUser);
+            writer.writeUTF("/joinDM " + handle + "~" + otherUser);
             System.out.println("Chatting with : " + otherUser);
             new DMThread(reader, writer, handle, otherUser); //starts chatroom thread for client to keep waiting for messages from server
             String msg;
@@ -192,6 +211,7 @@ public class Client {
             writer.writeUTF("/dcDM " + handle + "~" + otherUser);
     
             System.out.println("Type /chathelp for help, /chatleave to leave chats.");
+        
         } catch (Exception e) {
             e.printStackTrace();
         }

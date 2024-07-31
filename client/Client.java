@@ -163,7 +163,7 @@ public class Client {
                 case "/whisper":
                     if(command.length == 2)
                     {
-                        String otherUser = command[1]; 
+                        String otherUser = command[1].trim(); 
                     try {
                         writer.writeUTF("/check " + handle + "~" + otherUser);
                         writer.flush(); 
@@ -200,9 +200,9 @@ public class Client {
 
     static void joinDMRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle, String otherUser) {
         try {
+            new DMThread(reader, writer, handle, otherUser); //starts chatroom thread for client to keep waiting for messages from server
             writer.writeUTF("/joinDM " + handle + "~" + otherUser);
             System.out.println("Chatting with : " + otherUser);
-            new DMThread(reader, writer, handle, otherUser); //starts chatroom thread for client to keep waiting for messages from server
             String msg;
             while (!(msg = sc.nextLine()).equals("/dc")) {
                 writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server

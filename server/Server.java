@@ -7,6 +7,7 @@ public class Server {
         int port = Integer.parseInt(args[0]); // Can be changed 
         HashMap<Socket, String> handles = new HashMap<>();
         ArrayList<Socket> chatRoom = new ArrayList<>();
+        ArrayList<DM> DMList = new ArrayList<>();
         try {
             ServerSocket ss = new ServerSocket(port);
 
@@ -19,7 +20,7 @@ public class Server {
                 System.out.println("Server: Client at " + endpoint.getRemoteSocketAddress() + " has connected");
 
                 // Make the Thread Object
-                Connection connect = new Connection(endpoint, handles, chatRoom);
+                Connection connect = new Connection(endpoint, handles, chatRoom, DMList);
                 // Start the thread
                 connect.start();
             }

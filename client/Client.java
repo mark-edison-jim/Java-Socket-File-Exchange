@@ -17,10 +17,14 @@ public class Client {
     private JButton submitButton;
     public boolean hasJoined = false;
     public boolean hasRegistered = false;
+    public boolean isChatting = false;
+    public boolean isPrivateChatting = false;
+    public boolean isGroupChatting = false;
     public String handle ="";
     public Socket endpoint;
     public DataInputStream reader ; //receives data from Server
     public DataOutputStream writer; //sends data to Server
+    private String otherUser;
 
     public Client() {
         frame = new JFrame("Simple Frame\n");
@@ -75,6 +79,8 @@ public class Client {
             
 
             String command[] = msg.split(" ");
+            if(!isChatting)
+            {
             switch (command[0]) {
                 case "/?":
                     printHelpCommands();
@@ -203,6 +209,10 @@ public class Client {
                         else
                             outputArea.append("Error: Store failed. Please connect, register, or both to the server first.\n");
                         break;
+                case "/chat":
+                        outputArea.append("Type '/chathelp' to see the list of chat commands.\n");
+                        isChatting = true;
+                        break;
                 case "/get":
                     if(hasJoined && hasRegistered)
                     {
@@ -238,8 +248,96 @@ public class Client {
                         outputArea.append("Error: Command not found.\n");
                     }
                     break;
+                }
             }
-    }
+            else{
+                if(isPrivateChatting)
+                {
+                    if(msg == "/dc")
+                    {
+                        try {
+                            writer.writeUTF("/dcDM " + handle + "~" + otherUser);
+                        } catch (IOException ex) {
+                        }
+                    }
+                    else
+                    {
+                        try {
+                            writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
+                            outputArea.append(handle + ": ");
+                        } catch (IOException ex) {
+                        }
+                    }
+                }
+                else if(isGroupChatting)
+                {
+                    
+                    
+                    System.out.println("Type /chathelp for help, /chatleave to leave chats.");
+                    if(msg == "/dc")
+                    {
+                        try {
+                            writer.writeUTF("/dcCR");
+                            isGroupChatting= false;
+                        } catch (IOException ex) {
+                        }
+                    }
+                    else
+                    {
+                        try {
+                            writer.writeUTF("/cr " + msg); //sends message to server
+                            System.out.print(handle + ": ");
+                        } catch (IOException ex) {
+                        }
+                    }
+                }
+                else
+                {
+                    switch (command[0]) {
+                        case "/chathelp":
+                            printChatCommands();
+                            break;
+                        case "/chatroom":
+                            outputArea.append("Type /dc to leave the chatroom.\n");
+                            try {
+                                writer.writeUTF("/joinCR"); //sends join chatroom request
+                                new ChatroomThread(reader, handle, outputArea); //starts chatroom thread for client to keep waiting for messages from server
+                                outputArea.append(handle + ": ");
+                                isGroupChatting = true;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case "/whisper":
+                            if(command.length == 2)
+                            {
+                                outputArea.append("Type /dc to leave the chatroom.\n");
+                                otherUser = command[1];
+                                try {
+                                    writer.writeUTF("/joinDM " + handle + "~" + otherUser);
+                                        System.out.println("Chatting with : " + otherUser+"\n");
+                                        new DMThread(reader, writer, handle, otherUser, outputArea); //starts chatroom thread for client to keep waiting for messages from server
+                                        isPrivateChatting = true;
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                            }
+                            break;
+                        case "/chatleave":
+                        {
+                            isChatting = false;
+                            break;
+                        }
+                        default:
+                            if (!(msg.equals("/chatleave"))) {
+                                System.out.println("Error: Invalid Command");
+                            }
+                            break;
+                    }
+                }
+            }
+            
+        }
 
     private void printChatCommands() {
         outputArea.append(

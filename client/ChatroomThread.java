@@ -1,4 +1,5 @@
 import java.io.DataInputStream;
+import javax.swing.JTextArea;
 
 
 public class ChatroomThread implements Runnable{
@@ -7,9 +8,11 @@ public class ChatroomThread implements Runnable{
     private boolean exit;
     String handle;
     private Thread t;
-    public ChatroomThread(DataInputStream reader, String handle){
+    private JTextArea outputArea;
+    public ChatroomThread(DataInputStream reader, String handle, JTextArea outputArea){
         this.reader = reader;
         this.handle = handle;
+        this.outputArea = outputArea;
         exit = false;
         t = new Thread(this);
         t.start();
@@ -24,15 +27,15 @@ public class ChatroomThread implements Runnable{
                 Thread.sleep(200);
                 String msg = reader.readUTF();
                 if(!msg.equals("/dc")){
-                    System.out.println("\r" + msg); //removes current line and adds new lines to simulate new incoming messages
-                    System.out.print(handle + ": ");
+                    outputArea.append("\r" + msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
+                    outputArea.append(handle + ": \n");
                     
                 }else{
                     stop();
                 }
             }
         } catch (Exception e) {
-            System.out.print("");
+            outputArea.append("");
         }
     }
 

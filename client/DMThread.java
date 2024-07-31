@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import javax.swing.JTextArea;
 
 
 public class DMThread implements Runnable{
@@ -9,11 +10,13 @@ public class DMThread implements Runnable{
     private boolean exit;
     String handle;
     String otherUser;
+    private JTextArea outputArea;
     private Thread t;
-    public DMThread(DataInputStream reader, DataOutputStream writer, String handle, String otherUser){
+    public DMThread(DataInputStream reader, DataOutputStream writer, String handle, String otherUse, JTextArea outputArea){
         this.reader = reader;
         this.writer = writer;
         this.handle = handle;
+        this.outputArea = outputArea;
         this.otherUser = otherUser;
         exit = false;
         t = new Thread(this);
@@ -28,17 +31,17 @@ public class DMThread implements Runnable{
             while (!exit) {
                Thread.sleep(200);
                 String msg = reader.readUTF();
-                writer.writeUTF("/log " + handle +"~"+ otherUser +"~"+ msg);
+                writer.writeUTF("/log " + handle +"~"+ otherUser +"~"+ msg+"\n");
                 if(!msg.equals("/dc")){
-                    System.out.println("\r" + msg); //removes current line and adds new lines to simulate new incoming messages
-                    System.out.print(handle + ": ");
+                    outputArea.append("\r" + msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
+                    outputArea.append(handle + ": \n");
                     
                 }else{
                     stop();
                 }
             }
         } catch (Exception e) {
-            System.out.print("");
+            outputArea.append("");
         }
     }
 

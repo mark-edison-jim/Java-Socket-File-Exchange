@@ -151,7 +151,7 @@ public class Client {
             System.out.print("> ");
             msg = sc.nextLine();
 
-            String command[] = msg.split(" ");
+            String command[] = msg.split(" ",2);
             switch (command[0]) {
                 case "/chathelp":
                     printChatCommands();
@@ -160,27 +160,17 @@ public class Client {
                     System.out.println("Type /dc to leave the chatroom.");
                     joinChatRoom(sc, writer, reader, handle);
                     break;
-                case "/chat":
-
-                    break;
-                case "/leave":
-                    System.out.println("Error: Disconnection failed. Please connect to the server first.");
-                    break;
-                case "/register":
-                    System.out.println("Error: Register failed. Please connect to the server first.");
-                    break;
-                case "/store":
-                    System.out.println("Error: Store failed. Please connect to the server first.");
-                    break;
-                case "/dir":
-                    System.out.println("Error: Dir failed. Please connect to the server first.");
-                    break;
-                case "/get":
-                    System.out.println("Error: Get failed. Please connect to the server first.");
+                case "/whisper":
+                    if(command.length == 2)
+                    {
+                        System.out.println("Type /dc to leave the chatroom.");
+                        String otherUser = command[1];
+                            joinDMRoom(sc, writer, reader, handle, otherUser);
+                    }
                     break;
                 default:
                     if (!(msg.equals("/chatleave"))) {
-                        System.out.println("Error: Command not found.");
+                        System.out.println("Error: Invalid Command");
                     }
                     break;
             }
@@ -189,22 +179,24 @@ public class Client {
         System.out.println("Type /? to see all commands.");
     }
 
-    // static void directChat(Scanner sc, String handle, DataOutputStream writer, DataInputStream reader) {
-    //     try {
-    //         writer.writeUTF("/joinDirect");
-    //         new ChatroomThread(reader, handle);
-    //         String msg;
-    //         System.out.print(handle + ": ");
-    //         while (!(msg = sc.nextLine()).equals("/dc")) {
-    //             writer.writeUTF("/cr " + msg);
-    //             System.out.print(handle + ": ");
-    //         }
-    //         writer.writeUTF("/dcCR");
-    //         System.out.println("Type /chathelp for help, /chatleave to leave chats.");
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    static void joinDMRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle, String otherUser) {
+        try {
+           writer.writeUTF("/joinDM " + handle + "~" + otherUser);
+            System.out.println("Chatting with : " + otherUser);
+            new DMThread(reader, writer, handle, otherUser); //starts chatroom thread for client to keep waiting for messages from server
+            String msg;
+            while (!(msg = sc.nextLine()).equals("/dc")) {
+                writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
+                System.out.print(handle + ": ");
+            }
+            writer.writeUTF("/dcDM " + handle + "~" + otherUser);
+    
+            System.out.println("Type /chathelp for help, /chatleave to leave chats.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     static void joinChatRoom(Scanner sc, DataOutputStream writer, DataInputStream reader, String handle) {
         try {
@@ -312,7 +304,7 @@ public class Client {
         System.out.println(
                 "+----------------------------------------------+-------------------------------------+-------------------------+");
         System.out.println(
-                "| Chat with another user                       | /chat <username>                    | /chat User1             |");
+                "| Chat with another user                       | /whisper <username>                 | /whisper User1          |");
         System.out.println(
                 "+----------------------------------------------+-------------------------------------+-------------------------+");
     }

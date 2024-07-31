@@ -1,13 +1,17 @@
+
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import javax.swing.DropMode;
 
 public class Connection extends Thread {
 
     private Socket s;
     HashMap<Socket, String> handles = new HashMap<>();
     ArrayList<Socket> chatRoom = new ArrayList<>();
+    DMRooms dmRooms = new DMRooms();
+
     Socket directChat;
 
     public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom) {
@@ -22,6 +26,15 @@ public class Connection extends Thread {
             String msg;
             DataInputStream reader = new DataInputStream(s.getInputStream()); //receiving data from client
             DataOutputStream writer = new DataOutputStream(s.getOutputStream()); //sending data to client
+            String newString[] = null;
+            String dmMessage = null;
+            String handle = null;
+            String otherUser = null;
+            String otherMessage = null;
+            Socket handleSocket = null;
+            Socket otherUserSocket = null;
+            DataOutputStream otherUserStream = null;
+            DataOutputStream handleStream = null;
 
             // This checks whether the string that was sent from
             // the client side is the terminal "END" else we
@@ -104,34 +117,61 @@ public class Connection extends Thread {
                         chatRoom.remove(s);
                         writer.writeUTF("/dc");
                         break;
-                    // case "/joinDirect":
-                    //     chatRoom.add(s);
-                    //     for (Socket socket : chatRoom) {
-                    //         if (!socket.equals(s)) {
-                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
-                    //             sender.writeUTF("--" + handles.get(s) + " has joined the chat room--");
-                    //         }
-                    //     }
-                    //     break;
-                    // case "/direct":
-                    //     for (Socket socket : chatRoom) {
-                    //         if (!socket.equals(s)) {
-                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
-                    //             sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
-                    //         }
-                    //     }
-                    //     System.out.println();
-                    //     break;
-                    // case "/dcDirect":
-                    //     for (Socket socket : chatRoom) {
-                    //         if (!socket.equals(s)) {
-                    //             DataOutputStream sender = new DataOutputStream(socket.getOutputStream());
-                    //             sender.writeUTF("--" + handles.get(s) + " has left the chat room--");
-                    //         }
-                    //     }
-                    //     chatRoom.remove(s);
-                    //     writer.writeUTF("/dc");
-                    //     break;
+                    case "/joinDM": // leave dm room
+                        newString = clientCommands[1].split("~", 3);
+                        handle = newString[0];  // Sender's handle
+                        otherUser = newString[1]; // Recipient's handle
+                        handleSocket = getKeyByValue(handles, handle);
+                        DM curRoom = dmRooms.getOrCreateRoom(handle, otherUser);
+
+                        handleStream = new DataOutputStream(handleSocket.getOutputStream());
+                        System.out.println(handle + " : " + curRoom.getMessages());
+                        handleStream.writeUTF(curRoom.getMessages());
+                        break;
+                    case "/dm": //handles dms
+                        newString = clientCommands[1].split("~", 3);
+                        dmMessage = newString[0]; // The direct message
+                        handle = newString[1];  // Sender's handle
+                        otherUser = newString[2]; // Recipient's handle
+                        handleSocket = getKeyByValue(handles, handle);
+                        otherUserSocket = getKeyByValue(handles, otherUser);
+
+                        DM currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
+                        if (!(dmMessage.length() == 0 || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc"))) {
+                            currentRoom.addMessage(handle, dmMessage.trim());
+                        }
+
+                        if (handleSocket == null || otherUserSocket == null) {
+                            System.out.println("One or both users not found.");
+                            break;
+                        }
+
+                        // Send the direct message to the other user
+                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                        otherUserStream.writeUTF(handle + ": " + dmMessage);
+
+                        break;
+                    case "/log":
+                        newString = clientCommands[1].split("~", 3);
+                        handle = newString[0];  // Sender's handle
+                        otherUser = newString[1]; // Recipient's handle
+                        otherMessage = newString[2];
+                        DM currRoom = dmRooms.getOrCreateRoom(handle, otherUser);
+                        if (!(otherMessage.length() == 0 || otherMessage.contains(" has left the chat--") || otherMessage.contains("/dc"))) {
+                            currRoom.addMessage(otherMessage.trim());                     
+                        }
+
+                        break;
+                    case "/dcDM": // leave dm room
+                        newString = clientCommands[1].split("~", 2);
+                        handle = newString[0];  // Sender's handle
+                        otherUser = newString[1]; // Recipient's handle
+                        otherUserSocket = getKeyByValue(handles, otherUser);
+                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                        otherUserStream.writeUTF("--" + handle + " has left the chat--");
+
+                        writer.writeUTF("/dc");
+                        break;
                     default:
                         System.out.println("Error: Command not found.");
                         break;
@@ -144,6 +184,15 @@ public class Connection extends Thread {
         } finally {
             System.out.println("Server: Client " + s.getRemoteSocketAddress() + " has disconnected");
         }
+    }
+
+    public static <K, V> K getKeyByValue(HashMap<K, V> map, V value) {
+        for (HashMap.Entry<K, V> entry : map.entrySet()) {
+            if (entry.getValue().equals(value)) {
+                return entry.getKey();
+            }
+        }
+        return null; // Return null if value is not found
     }
 
     static void sendFile(Socket endpoint, String fileName, File file) {

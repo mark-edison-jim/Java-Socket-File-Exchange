@@ -97,27 +97,27 @@ public class Client {
                             String host = command[1];
                             int port = Integer.parseInt(command[2]);
                             this.endpoint = new Socket(host, port);
-
+                            this.reader = new DataInputStream(endpoint.getInputStream());
+                            this.writer = new DataOutputStream(endpoint.getOutputStream());
                             outputArea.append("You are connected to the server " + host + ":" + port+"\n");
                             outputArea.append("Type /? to see all commands.\n");
                             hasJoined = true;
                             break;
-                        } catch (NumberFormatException e) {
+                        } catch (Exception ex) {
                             outputArea.append(
                                     "Error: Connection to the Server has failed! Please check IP Address and Port Number.\n");
-                        } catch (IOException ex) {
                         }
                     }
                     break;
                 case "/leave":
-                    if(!hasRegistered)
+                    if(!hasJoined)
                     {
                         outputArea.append("Error: Disconnection failed. Please connect to the server first.\n");
                     }
                     else
                     {
                         try {
-                            writer.writeUTF("END");
+                            this.writer.writeUTF("END");
                             
                             outputArea.append("Client: has terminated connection\n");
                             
@@ -136,8 +136,6 @@ public class Client {
                         if(hasJoined)
                         {
                             try {
-                                reader = new DataInputStream(endpoint.getInputStream());
-                                writer = new DataOutputStream(endpoint.getOutputStream());
                                 writer.writeUTF(msg);
                             
                                 // Attempt to read response from server
@@ -205,11 +203,12 @@ public class Client {
                                 for (int i = 0; i < numFiles; i++) {
                                     outputArea.append(reader.readUTF()+"\n");
                                 }
-                            } catch (IOException ex) {
+                            } catch (Exception ex) {
+                                outputArea.append("Error:  Cannot find directory. Please connect, register, or both to the server first or check if the server is on.\n");
                             }
                         }
                         else
-                            outputArea.append("Error: Store failed. Please connect, register, or both to the server first.\n");
+                            outputArea.append("Error:  Cannot find directory. Please connect, register, or both to the server first.\n");
                         break;
                 case "/chat":
                         if(hasRegistered)
@@ -218,7 +217,7 @@ public class Client {
                             isChatting = true;
                         }
                         else
-                            outputArea.append("Error: Store failed. Please connect, register, or both to the server first.\n");
+                            outputArea.append("Error: Chat failed. Please connect, register, or both to the server first.\n");
                         break;
                 case "/get":
                     if(hasJoined && hasRegistered)

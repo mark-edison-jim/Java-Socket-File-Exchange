@@ -14,7 +14,7 @@ public class Server {
     private JButton submitButton;
     private boolean hasPort = false;
     public Server(){
-        frame = new JFrame("Simple Frame\n");
+        frame = new JFrame("Server\n");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(500, 400);
         frame.setLayout(new BorderLayout());
@@ -33,6 +33,7 @@ public class Server {
 
         // Create the output area
         outputArea = new JTextArea();
+        outputArea.setFont(new Font("Monospaced", Font.BOLD, 15)); // Use a monospaced font for better alignment
         outputArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(outputArea);
         frame.add(scrollPane, BorderLayout.CENTER);
@@ -76,7 +77,7 @@ public class Server {
         try {
             ServerSocket ss = new ServerSocket(port);
 
-            outputArea.append("Sever: Listening to port " + port+"\n");
+            outputArea.append("Server: Listening to port " + port+"\n");
 
             while (true) {
                 // Waits for a client to connect

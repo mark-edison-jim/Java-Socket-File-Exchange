@@ -32,7 +32,6 @@ public class DMThread implements Runnable{
                Thread.sleep(200);
                 String msg = reader.readUTF();
                 String message[] = msg.split(" ", 2);
-                //System.out.println(" MESSAGE [0] : " + message[0]);
                 if(!message[0].equals("/skip")){
                     if(!msg.equals("/dc")){
                         outputArea.append(msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
@@ -43,8 +42,6 @@ public class DMThread implements Runnable{
                     }
                 }
                 else{
-                  //System.out.println(" TrimmedMsg [0] : " + trimmedMsg[0]);
-                    //System.out.println(" CASE 2 : " + trimmedMsg[1]);
                         outputArea.append(message[1]+"\n"); //removes current line and adds new lines to simulate new incoming messages
                 }
 

@@ -81,7 +81,14 @@ public class Connection extends Thread {
                             writer.writeUTF(name);
                         }
                         break;
-
+                    case "/listUsers":
+                        contents = handles.values().toArray(new String[0]);
+                        outputArea.append("List of Users Available:\n");
+                        writer.writeInt(handles.size());
+                        for (String name : contents) {
+                            writer.writeUTF(name);
+                        }
+                        break;
                     case "/get": //receives get request from client
                         String path = "./files/" + clientCommands[1]; //gets file path in server
                         File file = new File(path);
@@ -220,7 +227,7 @@ public class Connection extends Thread {
                         writer.writeUTF("/dc");
                         break;
                     default:
-                        outputArea.append("Error: Command not found.\n");
+                    outputArea.append("Error: Command not found.\n");
                         break;
                 }
             }

@@ -27,8 +27,7 @@ public class ChatroomThread implements Runnable{
                 Thread.sleep(200);
                 String msg = reader.readUTF();
                 if(!msg.equals("/dc")){
-                    outputArea.append("\r" + msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
-                    outputArea.append(handle + ": \n");
+                    outputArea.append(msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
                     
                 }else{
                     stop();

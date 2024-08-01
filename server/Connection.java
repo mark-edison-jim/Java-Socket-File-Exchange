@@ -3,20 +3,24 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import javax.swing.JTextArea;
 
 public class Connection extends Thread {
 
     private Socket s;
     HashMap<Socket, String> handles = new HashMap<>();
     ArrayList<Socket> chatRoom = new ArrayList<>();
-    DMRooms dmRooms = new DMRooms();
-
+    ArrayList<DM> DMList = new ArrayList<>();
+    private JTextArea outputArea;
+    private int dmRoomId=0;
     Socket directChat;
 
-    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom) {
+    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom, ArrayList<DM> DMList, JTextArea outputArea) {
         this.s = s;
         this.handles = handles;
         this.chatRoom = chatRoom;
+        this.DMList = DMList;
+        this.outputArea = outputArea;
     }
 
     @Override
@@ -34,6 +38,7 @@ public class Connection extends Thread {
             Socket otherUserSocket = null;
             DataOutputStream otherUserStream = null;
             DataOutputStream handleStream = null;
+            DM currentRoom;
 
             // This checks whether the string that was sent from
             // the client side is the terminal "END" else we
@@ -70,7 +75,7 @@ public class Connection extends Thread {
                         File directoryPath = new File("./files");
                         // List of all files and directories
                         String contents[] = directoryPath.list();
-                        System.out.println("List of files and directories in the specified directory:");
+                        outputArea.append("List of files and directories in the specified directory:\n");
                         writer.writeInt(contents.length);
                         for (String name : contents) {
                             writer.writeUTF(name);
@@ -104,7 +109,7 @@ public class Connection extends Thread {
                                 sender.writeUTF("" + handles.get(s) + ": " + clientCommands[1]);
                             }
                         }
-                        System.out.println();
+                        outputArea.append("\n");
                         break;
                     case "/dcCR":
                         for (Socket socket : chatRoom) {
@@ -116,16 +121,44 @@ public class Connection extends Thread {
                         chatRoom.remove(s);
                         writer.writeUTF("/dc");
                         break;
-                    case "/joinDM": // leave dm room
+                    case "/check": //receives message from client in chatroom
+                        newString = clientCommands[1].split("~", 2);
+                        handle = newString[0];  // Sender's handle
+                        otherUser = newString[1]; // Recipient's handle
+                        if (handle.equals(otherUser)) {
+                            writer.writeUTF("False1");
+                        } else {
+                            writer.writeUTF(handles.containsValue(otherUser) ? "True" : "False2");
+                        }
+                        break;
+                    case "/joinDM":
                         newString = clientCommands[1].split("~", 3);
                         handle = newString[0];  // Sender's handle
                         otherUser = newString[1]; // Recipient's handle
                         handleSocket = getKeyByValue(handles, handle);
-                        DM curRoom = dmRooms.getOrCreateRoom(handle, otherUser);
+                        otherUserSocket = getKeyByValue(handles, otherUser);
+                        currentRoom = getRoom(handle, otherUser, this.DMList);
+
+                        if(currentRoom == null)
+                        {
+                            
+                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
+                            this.dmRoomId++;
+                            outputArea.append("ROOM CREATED!!\n");
+                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
+                            
+                        }
+                        currentRoom.setUserJoinedStatus(handle, true);
+                        outputArea.append(" JUST JOINED | HANDLE: " + handle + " USER STATUS: " + currentRoom.checkIfUserJoined(handle)+"\n");
+                        outputArea.append(" JUST JOINED | OTHERUSER: " + otherUser + " OTHERUSER STATUS: " + currentRoom.checkIfUserJoined(otherUser)+"\n");
+                        if (currentRoom.checkIfUserJoined(otherUser)) {
+                            otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                            otherUserStream.writeUTF("--" + handle + " has joined the chat--");
+                        }
 
                         handleStream = new DataOutputStream(handleSocket.getOutputStream());
-                        System.out.println(handle + " : " + curRoom.getMessages());
-                        handleStream.writeUTF(curRoom.getMessages());
+                        outputArea.append(handle + " : " + currentRoom.getMessages()+"\n");
+                        handleStream.writeUTF("/skip " + currentRoom.getMessages());
                         break;
                     case "/dm": //handles dms
                         newString = clientCommands[1].split("~", 3);
@@ -135,44 +168,59 @@ public class Connection extends Thread {
                         handleSocket = getKeyByValue(handles, handle);
                         otherUserSocket = getKeyByValue(handles, otherUser);
 
-                        DM currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
-                        if (!(dmMessage.length() == 0 || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc"))) {
+                        currentRoom = getRoom(handle, otherUser, this.DMList);
+
+                        if(currentRoom == null)
+                        {
+                            
+                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
+                            this.dmRoomId++;
+                            outputArea.append("ROOM CREATED!!\n");
+                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
+                            
+                        }
+                        if (!(dmMessage.length() == 0 || dmMessage.contains(" has joined the chat--") || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc"))) {
                             currentRoom.addMessage(handle, dmMessage.trim());
                         }
 
                         if (handleSocket == null || otherUserSocket == null) {
-                            System.out.println("One or both users not found.");
+                            outputArea.append("One or both users not found.\n");
                             break;
                         }
 
-                        // Send the direct message to the other user
-                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                        otherUserStream.writeUTF(handle + ": " + dmMessage);
-
-                        break;
-                    case "/log":
-                        newString = clientCommands[1].split("~", 3);
-                        handle = newString[0];  // Sender's handle
-                        otherUser = newString[1]; // Recipient's handle
-                        otherMessage = newString[2];
-                        DM currRoom = dmRooms.getOrCreateRoom(handle, otherUser);
-                        if (!(otherMessage.length() == 0 || otherMessage.contains(" has left the chat--") || otherMessage.contains("/dc"))) {
-                            currRoom.addMessage(otherMessage.trim());                     
+                        outputArea.append(" DMing | HANDLE: " + handle + " USER STATUS: " + currentRoom.checkIfUserJoined(handle)+"\n");
+                        outputArea.append(" DMing | OTHERUSER: " + otherUser + " OTHERUSER STATUS: " + currentRoom.checkIfUserJoined(otherUser)+"\n");
+                        if (currentRoom.checkIfUserJoined(otherUser)) {
+                            otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                            otherUserStream.writeUTF(handle + ": " + dmMessage);
                         }
-
                         break;
                     case "/dcDM": // leave dm room
                         newString = clientCommands[1].split("~", 2);
                         handle = newString[0];  // Sender's handle
                         otherUser = newString[1]; // Recipient's handle
                         otherUserSocket = getKeyByValue(handles, otherUser);
-                        otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
-                        otherUserStream.writeUTF("--" + handle + " has left the chat--");
+                        currentRoom = getRoom(handle, otherUser, this.DMList);
 
+                        if(currentRoom == null)
+                        {
+                            
+                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
+                            this.dmRoomId++;
+                            outputArea.append("ROOM CREATED!!\n");
+                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
+                            
+                        }
+                        currentRoom.setUserJoinedStatus(handle, false);
+
+                        if (currentRoom.checkIfUserJoined(otherUser)) {
+                            otherUserStream = new DataOutputStream(otherUserSocket.getOutputStream());
+                            otherUserStream.writeUTF("--" + handle + " has left the chat--");
+                        }
                         writer.writeUTF("/dc");
                         break;
                     default:
-                        System.out.println("Error: Command not found.");
+                        outputArea.append("Error: Command not found.\n");
                         break;
                 }
             }
@@ -181,10 +229,27 @@ public class Connection extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Server: Client " + s.getRemoteSocketAddress() + " has disconnected");
+            outputArea.append("Server: Client " + s.getRemoteSocketAddress() + " has disconnected\n");
         }
     }
 
+
+    public static DM getRoom(String userA, String userB, ArrayList<DM> DMList) {
+        // Check if a room already exists between userA and userB
+        for (DM room : DMList) {
+            if ((room.getUserA().equals(userA) && room.getUserB().equals(userB)) ||
+                (room.getUserA().equals(userB) && room.getUserB().equals(userA))) {
+                return room; // Room found
+            }
+        }
+        return null;
+    }
+
+    public static DM createRoom(String userA, String userB, int ID, ArrayList<DM> DMList){
+        DM newRoom = new DM(userA, userB, ID);
+        DMList.add(newRoom);
+        return DMList.get(DMList.size()-1);
+    }
     public static <K, V> K getKeyByValue(HashMap<K, V> map, V value) {
         for (HashMap.Entry<K, V> entry : map.entrySet()) {
             if (entry.getValue().equals(value)) {

@@ -1,16 +1,37 @@
 import java.util.ArrayList;
 
 public class DM {
-    private String userA;
-    private String userB;
-    private int roomID;
-    private ArrayList<String> messageLog = new ArrayList<>();
+    private final String userA;
+    private final String userB;
+    private final int roomID;
+    private boolean userAHasJoined;
+    private boolean userBHasJoined;
+    private final ArrayList<String> messageLog = new ArrayList<>();
 
 
     public DM(String userA, String userB, int roomID) {
         this.userA = userA;
         this.userB = userB;
         this.roomID = roomID;
+        this.userAHasJoined = false; 
+        this.userBHasJoined = false; 
+    }
+
+    public boolean checkIfUserJoined(String user) {
+        if (user.equals(userA)) {
+            return this.userAHasJoined;
+        } else if (user.equals(userB)) {
+            return this.userBHasJoined;
+        }
+        return false; // User is not part of this DM room
+    }
+
+    public void setUserJoinedStatus(String user, boolean hasJoined) {
+        if (user.equals(userA)) {
+            this.userAHasJoined = hasJoined;
+        } else if (user.equals(userB)) {
+            this.userBHasJoined = hasJoined;
+        }
     }
 
     public String getUserA() {

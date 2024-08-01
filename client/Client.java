@@ -54,7 +54,7 @@ public class Client {
         frame.add(panel, BorderLayout.NORTH);
 
         // Add action listener for the submit button
-        submitButton.addActionListener(new ActionListener() {
+        ActionListener submitListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Get the input text
@@ -66,7 +66,9 @@ public class Client {
                 // Clear the input field after processing
                 inputField.setText("");
             }
-        });
+        };
+        submitButton.addActionListener(submitListener);
+        inputField.addActionListener(submitListener);
     }
     public void display() {
         // Set the frame visible
@@ -143,7 +145,7 @@ public class Client {
                                 if (result.equals("False")) {
                                     outputArea.append("Error: Registration failed. Handle or alias already exists.\n");
                                 } else if (result.equals("True")) {
-                                    handle = command[1];
+                                    this.handle = command[1];
                                     outputArea.append("Server: Welcome " + command[1] + "!\n");
                                     hasRegistered = true;
                                 }
@@ -181,7 +183,7 @@ public class Client {
                                     sendFile(endpoint, storeCommand[1], file);
                                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
                                     LocalDateTime now = LocalDateTime.now();
-                                    outputArea.append(handle + "<" + dtf.format(now) + ">: Uploaded " + storeCommand[1]+"\n"); //log message that client has stored file to server
+                                    outputArea.append(this.handle + "<" + dtf.format(now) + ">: Uploaded " + storeCommand[1]+"\n"); //log message that client has stored file to server
                                 } else {
                                     outputArea.append("Error: File not found.\n");
                                 }
@@ -210,8 +212,13 @@ public class Client {
                             outputArea.append("Error: Store failed. Please connect, register, or both to the server first.\n");
                         break;
                 case "/chat":
-                        outputArea.append("Type '/chathelp' to see the list of chat commands.\n");
-                        isChatting = true;
+                        if(hasRegistered)
+                        {
+                            outputArea.append("Type '/chathelp' to see the list of chat commands.\n");
+                            isChatting = true;
+                        }
+                        else
+                            outputArea.append("Error: Store failed. Please connect, register, or both to the server first.\n");
                         break;
                 case "/get":
                     if(hasJoined && hasRegistered)
@@ -251,32 +258,34 @@ public class Client {
                 }
             }
             else{
-                if(isPrivateChatting)
+                if(this.isPrivateChatting)
                 {
-                    if(msg == "/dc")
+                    if(input.equals("/dc"))
                     {
                         try {
-                            writer.writeUTF("/dcDM " + handle + "~" + otherUser);
+                            outputArea.append("You left the chatroom.\n");
+                            writer.writeUTF("/dcDM " + this.handle + "~" + this.otherUser);
+                            isPrivateChatting = false;
                         } catch (IOException ex) {
                         }
                     }
                     else
                     {
                         try {
-                            writer.writeUTF("/dm " + msg + "~" + handle + "~" + otherUser); //sends message to server
-                            outputArea.append(handle + ": ");
+                            writer.writeUTF("/dm " + msg + "~" + this.handle + "~" + this.otherUser); //sends message to server
+                            outputArea.append(handle + ": " +msg+"\n");
+                            //outputArea.append(this.handle + ": ");
                         } catch (IOException ex) {
                         }
                     }
                 }
-                else if(isGroupChatting)
-                {
-                    
-                    
-                    System.out.println("Type /chathelp for help, /chatleave to leave chats.");
-                    if(msg == "/dc")
+                else if(this.isGroupChatting)
+                {  
+                    if(input.equals("/dc"))
                     {
+                        isGroupChatting= false;
                         try {
+                            outputArea.append("You left the chatroom.\n");
                             writer.writeUTF("/dcCR");
                             isGroupChatting= false;
                         } catch (IOException ex) {
@@ -285,8 +294,9 @@ public class Client {
                     else
                     {
                         try {
+                            outputArea.append(handle + ": " +msg+"\n");
                             writer.writeUTF("/cr " + msg); //sends message to server
-                            System.out.print(handle + ": ");
+                            //System.out.print(this.handle + ": \n");
                         } catch (IOException ex) {
                         }
                     }
@@ -301,26 +311,44 @@ public class Client {
                             outputArea.append("Type /dc to leave the chatroom.\n");
                             try {
                                 writer.writeUTF("/joinCR"); //sends join chatroom request
-                                new ChatroomThread(reader, handle, outputArea); //starts chatroom thread for client to keep waiting for messages from server
-                                outputArea.append(handle + ": ");
+                                new ChatroomThread(this.reader, this.handle, this.outputArea); //starts chatroom thread for client to keep waiting for messages from server
+                                //outputArea.append(this.handle + ": ");
                                 isGroupChatting = true;
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                             break;
                         case "/whisper":
-                            if(command.length == 2)
-                            {
-                                outputArea.append("Type /dc to leave the chatroom.\n");
-                                otherUser = command[1];
-                                try {
-                                    writer.writeUTF("/joinDM " + handle + "~" + otherUser);
-                                        System.out.println("Chatting with : " + otherUser+"\n");
-                                        new DMThread(reader, writer, handle, otherUser, outputArea); //starts chatroom thread for client to keep waiting for messages from server
-                                        isPrivateChatting = true;
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
+                        if(command.length == 2)
+                        {
+                            
+                            this.otherUser = command[1].trim(); 
+                            try {
+                                writer.writeUTF("/check " + this.handle + "~" + this.otherUser);
+                                writer.flush(); 
+        
+        
+                                String response = reader.readUTF();
+                                if ("True".equals(response)) {
+                                    this.isPrivateChatting = true;
+                                    outputArea.append("Type /dc to leave the chatroom.\n");
+                                    new DMThread(reader, writer, this.handle, this.otherUser, outputArea); //starts chatroom thread for client to keep waiting for messages from server
+                                    writer.writeUTF("/joinDM " + this.handle + "~" + this.otherUser);
+                                    outputArea.append("Chatting with : " + this.otherUser+"\n");
+                                    
+                                } else if ("False1".equals(response)){
+                                    outputArea.append("Error: Cannot Whisper Yourself!\n");
+                                } else {
+                                    outputArea.append("Error: User not found!\n");
+                                }
+                                } catch (IOException e) {
+                                    outputArea.append("Error: Communication issue.\n");
+                                    e.printStackTrace(); 
+                                }
+                            }
+                            else{
+
+                                outputArea.append("Error: Invalid Command\n");
                             }
                             break;
                         case "/chatleave":
@@ -330,7 +358,7 @@ public class Client {
                         }
                         default:
                             if (!(msg.equals("/chatleave"))) {
-                                System.out.println("Error: Invalid Command");
+                                outputArea.append("Error: Invalid Command\n");
                             }
                             break;
                     }
@@ -338,7 +366,6 @@ public class Client {
             }
             
         }
-
     private void printChatCommands() {
         outputArea.append(
                  "+----------------------------------------------+-------------------------------------+-------------------------+\n");
@@ -425,6 +452,10 @@ public class Client {
                 new Client().display();
             }
         });
+    }
+
+    private void elif(boolean groupChatting) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
     // static void clientJoinedFunc(String host, int port, Scanner sc) {

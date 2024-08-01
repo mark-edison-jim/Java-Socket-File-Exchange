@@ -12,12 +12,12 @@ public class DMThread implements Runnable{
     String otherUser;
     private JTextArea outputArea;
     private Thread t;
-    public DMThread(DataInputStream reader, DataOutputStream writer, String handle, String otherUse, JTextArea outputArea){
+    public DMThread(DataInputStream reader, DataOutputStream writer, String handle, String otherUser, JTextArea outputArea){
         this.reader = reader;
         this.writer = writer;
         this.handle = handle;
-        this.outputArea = outputArea;
         this.otherUser = otherUser;
+        this.outputArea = outputArea;
         exit = false;
         t = new Thread(this);
         t.start();
@@ -31,17 +31,26 @@ public class DMThread implements Runnable{
             while (!exit) {
                Thread.sleep(200);
                 String msg = reader.readUTF();
-                writer.writeUTF("/log " + handle +"~"+ otherUser +"~"+ msg+"\n");
-                if(!msg.equals("/dc")){
-                    outputArea.append("\r" + msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
-                    outputArea.append(handle + ": \n");
-                    
-                }else{
-                    stop();
+                String message[] = msg.split(" ", 2);
+                //System.out.println(" MESSAGE [0] : " + message[0]);
+                if(!message[0].equals("/skip")){
+                    if(!msg.equals("/dc")){
+                        outputArea.append(msg+"\n"); //removes current line and adds new lines to simulate new incoming messages
+
+                        
+                    }else{
+                        stop();
+                    }
                 }
+                else{
+                  //System.out.println(" TrimmedMsg [0] : " + trimmedMsg[0]);
+                    //System.out.println(" CASE 2 : " + trimmedMsg[1]);
+                        outputArea.append(message[1]+"\n"); //removes current line and adds new lines to simulate new incoming messages
+                }
+
             }
         } catch (Exception e) {
-            outputArea.append("");
+            System.out.print("");
         }
     }
 

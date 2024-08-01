@@ -86,25 +86,29 @@ public class Client {
                     printHelpCommands();
                     break;
                 case "/join":
-                    // join command need exactly 3 inputs
-                    if (command.length != 3) {
-                        outputArea.append("Error: Command parameters do not match or is not allowed.\n");
+                    if (hasJoined) {
+                        outputArea.append("Error: User already joined.\n");
                     } else {
-                        try {
-                            // gets host and port from command input
-                            String host = command[1];
-                            int port = Integer.parseInt(command[2]);
-                            this.endpoint = new Socket(host, port);
-                            this.reader = new DataInputStream(endpoint.getInputStream());
-                            this.writer = new DataOutputStream(endpoint.getOutputStream());
-                            outputArea.append("Connection to the File Exchange. Server is successful!" + host + ":"
-                                    + port + "\n");
-                            outputArea.append("Type /? to see all commands.\n");
-                            hasJoined = true;
-                            break;
-                        } catch (Exception ex) {
-                            outputArea.append(
-                                    "Error: Connection to the Server has failed! Please check IP Address and Port Number.\n");
+                        // join command need exactly 3 inputs
+                        if (command.length != 3) {
+                            outputArea.append("Error: Command parameters do not match or is not allowed.\n");
+                        } else {
+                            try {
+                                // gets host and port from command input
+                                String host = command[1];
+                                int port = Integer.parseInt(command[2]);
+                                this.endpoint = new Socket(host, port);
+                                this.reader = new DataInputStream(endpoint.getInputStream());
+                                this.writer = new DataOutputStream(endpoint.getOutputStream());
+                                outputArea.append("Connection to the File Exchange. Server is successful!" + host + ":"
+                                        + port + "\n");
+                                outputArea.append("Type /? to see all commands.\n");
+                                hasJoined = true;
+                                break;
+                            } catch (Exception ex) {
+                                outputArea.append(
+                                        "Error: Connection to the Server has failed! Please check IP Address and Port Number.\n");
+                            }
                         }
                     }
                     break;
@@ -118,6 +122,7 @@ public class Client {
                             outputArea.append("Connection closed. Thank you!\n");
 
                             endpoint.close();
+                            hasJoined = false;
                             hasRegistered = false;
                         } catch (IOException ex) {
                         }
@@ -252,7 +257,7 @@ public class Client {
                         }
                     } else
                         outputArea.append(
-                                "Error: Store failed. Please connect, register, or both to the server first.\n");
+                                "Error: Get failed. Please connect, register, or both to the server first.\n");
                     break;
                 default:
                     if (!(msg.toUpperCase().equals("END"))) {
@@ -340,7 +345,8 @@ public class Client {
                                 if ("True".equals(response)) {
                                     this.isPrivateChatting = true;
                                     outputArea.append("Type /dc to leave the chatroom.\n");
-                                    new DMThread(reader, outputArea); // starts chatroom thread for client to keep waiting for messages from server
+                                    new DMThread(reader, outputArea); // starts chatroom thread for client to keep
+                                                                      // waiting for messages from server
                                     writer.writeUTF("/joinDM " + this.handle + "~" + this.otherUser);
                                     outputArea.append("Chatting with : " + this.otherUser + "\n");
 

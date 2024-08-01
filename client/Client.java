@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*; // For Scanner
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -341,16 +340,7 @@ public class Client {
                                 if ("True".equals(response)) {
                                     this.isPrivateChatting = true;
                                     outputArea.append("Type /dc to leave the chatroom.\n");
-                                    new DMThread(reader, writer, this.handle, this.otherUser, outputArea); // starts
-                                                                                                           // chatroom
-                                                                                                           // thread for
-                                                                                                           // client to
-                                                                                                           // keep
-                                                                                                           // waiting
-                                                                                                           // for
-                                                                                                           // messages
-                                                                                                           // from
-                                                                                                           // server
+                                    new DMThread(reader, outputArea); // starts chatroom thread for client to keep waiting for messages from server
                                     writer.writeUTF("/joinDM " + this.handle + "~" + this.otherUser);
                                     outputArea.append("Chatting with : " + this.otherUser + "\n");
 

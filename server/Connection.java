@@ -10,16 +10,14 @@ public class Connection extends Thread {
     private Socket s;
     HashMap<Socket, String> handles = new HashMap<>();
     ArrayList<Socket> chatRoom = new ArrayList<>();
-    ArrayList<DM> DMList = new ArrayList<>();
+    DMRooms dmRooms;
     private JTextArea outputArea;
-    private int dmRoomId=0;
-    Socket directChat;
 
-    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom, ArrayList<DM> DMList, JTextArea outputArea) {
+    public Connection(Socket s, HashMap<Socket, String> handles, ArrayList<Socket> chatRoom, DMRooms dmRooms, JTextArea outputArea) {
         this.s = s;
         this.handles = handles;
         this.chatRoom = chatRoom;
-        this.DMList = DMList;
+        this.dmRooms = dmRooms;
         this.outputArea = outputArea;
     }
 
@@ -33,7 +31,6 @@ public class Connection extends Thread {
             String dmMessage = null;
             String handle = null;
             String otherUser = null;
-            String otherMessage = null;
             Socket handleSocket = null;
             Socket otherUserSocket = null;
             DataOutputStream otherUserStream = null;
@@ -144,17 +141,8 @@ public class Connection extends Thread {
                         otherUser = newString[1]; // Recipient's handle
                         handleSocket = getKeyByValue(handles, handle);
                         otherUserSocket = getKeyByValue(handles, otherUser);
-                        currentRoom = getRoom(handle, otherUser, this.DMList);
+                        currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
 
-                        if(currentRoom == null)
-                        {
-                            
-                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
-                            this.dmRoomId++;
-                            outputArea.append("ROOM CREATED!!\n");
-                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
-                            
-                        }
                         currentRoom.setUserJoinedStatus(handle, true);
                         outputArea.append(" JUST JOINED | HANDLE: " + handle + " USER STATUS: " + currentRoom.checkIfUserJoined(handle)+"\n");
                         outputArea.append(" JUST JOINED | OTHERUSER: " + otherUser + " OTHERUSER STATUS: " + currentRoom.checkIfUserJoined(otherUser)+"\n");
@@ -165,7 +153,7 @@ public class Connection extends Thread {
 
                         handleStream = new DataOutputStream(handleSocket.getOutputStream());
                         outputArea.append(handle + " : " + currentRoom.getMessages()+"\n");
-                        handleStream.writeUTF("/skip " + currentRoom.getMessages());
+                        handleStream.writeUTF(currentRoom.getMessages());
                         break;
                     case "/dm": //handles dms
                         newString = clientCommands[1].split("~", 3);
@@ -175,17 +163,7 @@ public class Connection extends Thread {
                         handleSocket = getKeyByValue(handles, handle);
                         otherUserSocket = getKeyByValue(handles, otherUser);
 
-                        currentRoom = getRoom(handle, otherUser, this.DMList);
-
-                        if(currentRoom == null)
-                        {
-                            
-                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
-                            this.dmRoomId++;
-                            outputArea.append("ROOM CREATED!!\n");
-                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
-                            
-                        }
+                        currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
                         if (!(dmMessage.length() == 0 || dmMessage.contains(" has joined the chat--") || dmMessage.contains(" has left the chat--") || dmMessage.contains("/dc"))) {
                             currentRoom.addMessage(handle, dmMessage.trim());
                         }
@@ -207,17 +185,7 @@ public class Connection extends Thread {
                         handle = newString[0];  // Sender's handle
                         otherUser = newString[1]; // Recipient's handle
                         otherUserSocket = getKeyByValue(handles, otherUser);
-                        currentRoom = getRoom(handle, otherUser, this.DMList);
-
-                        if(currentRoom == null)
-                        {
-                            
-                            currentRoom = createRoom(handle, otherUser, this.dmRoomId, this.DMList);
-                            this.dmRoomId++;
-                            outputArea.append("ROOM CREATED!!\n");
-                            outputArea.append("ROOM ID: " + currentRoom.getRoomID() + " USER A: " + currentRoom.getUserA() + " USER B: " + currentRoom.getUserB()+"\n");
-                            
-                        }
+                        currentRoom = dmRooms.getOrCreateRoom(handle, otherUser);
                         currentRoom.setUserJoinedStatus(handle, false);
 
                         if (currentRoom.checkIfUserJoined(otherUser)) {
@@ -240,23 +208,6 @@ public class Connection extends Thread {
         }
     }
 
-
-    public static DM getRoom(String userA, String userB, ArrayList<DM> DMList) {
-        // Check if a room already exists between userA and userB
-        for (DM room : DMList) {
-            if ((room.getUserA().equals(userA) && room.getUserB().equals(userB)) ||
-                (room.getUserA().equals(userB) && room.getUserB().equals(userA))) {
-                return room; // Room found
-            }
-        }
-        return null;
-    }
-
-    public static DM createRoom(String userA, String userB, int ID, ArrayList<DM> DMList){
-        DM newRoom = new DM(userA, userB, ID);
-        DMList.add(newRoom);
-        return DMList.get(DMList.size()-1);
-    }
     public static <K, V> K getKeyByValue(HashMap<K, V> map, V value) {
         for (HashMap.Entry<K, V> entry : map.entrySet()) {
             if (entry.getValue().equals(value)) {

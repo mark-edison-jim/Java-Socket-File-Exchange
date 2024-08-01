@@ -1,8 +1,14 @@
 import java.util.ArrayList;
 
 public class DMRooms {
-    private ArrayList<DM> DMList = new ArrayList<>();
-    private int nextRoomID = 1; // To keep track of the next room ID
+    private final ArrayList<DM> DMList; // Use synchronizedList for thread safety
+    private int roomID;
+
+    public DMRooms(int initialRoomID) {
+        this.DMList = new ArrayList<>();
+        this.roomID = initialRoomID;
+    }
+
 
     // Method to get or create a DM room
     public DM getOrCreateRoom(String userA, String userB) {
@@ -13,10 +19,12 @@ public class DMRooms {
                 return room; // Room found
             }
         }
-
-        // No existing room, create a new one
-        DM newRoom = new DM(userA, userB, nextRoomID++);
+        // If no room is found, create a new one
+        DM newRoom = new DM(userA, userB, this.roomID);
         DMList.add(newRoom);
+        this.roomID++;
         return newRoom;
     }
+
+
 }

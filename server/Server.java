@@ -73,7 +73,7 @@ public class Server {
         int port = Integer.parseInt(args); // Can be changed 
         HashMap<Socket, String> handles = new HashMap<>();
         ArrayList<Socket> chatRoom = new ArrayList<>();
-        ArrayList<DM> DMList = new ArrayList<>();
+        DMRooms dmRooms = new DMRooms(0);
         try {
             ServerSocket ss = new ServerSocket(port);
 
@@ -86,7 +86,7 @@ public class Server {
                 outputArea.append("Server: Client at " + endpoint.getRemoteSocketAddress() + " has connected\n");
 
                 // Make the Thread Object
-                Connection connect = new Connection(endpoint, handles, chatRoom, DMList, outputArea);
+                Connection connect = new Connection(endpoint, handles, chatRoom, dmRooms, outputArea);
                 // Start the thread
                 connect.start();
             }
